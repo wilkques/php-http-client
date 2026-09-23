@@ -99,7 +99,7 @@ class Client implements ClientInterface
     protected function urlBuilder(string $url, $data = [])
     {
         if (!empty($data)) {
-            $url .= '?' . http_build_query($data, '', '&', PHP_QUERY_RFC3986);
+            $url .= '?' . Arrays::query($data);
         }
 
         return $url;
