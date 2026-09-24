@@ -26,7 +26,7 @@ abstract class TestCase extends BaseTestCase
         $base = getenv('HTTP_TEST_SERVER');
 
         if (!$base) {
-            $base = 'http://http-echo-server:8080';
+            $base = 'http://127.0.0.1:8080';
         }
 
         return rtrim($base, '/') . '/' . ltrim($path, '/');
