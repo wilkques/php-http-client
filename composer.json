@@ -14,6 +14,14 @@
             "Wilkques\\Http\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Wilkques\\Http\\Tests\\": "tests/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
     "config": {
         "preferred-install": {
             "*": "dist"
