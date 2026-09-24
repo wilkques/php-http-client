@@ -258,7 +258,15 @@ class Client implements ClientInterface
      */
     public function asMultipart()
     {
-        return $this->contentType('multipart/form-data; charset=utf-8; boundary=' . uniqid());
+        // No charset/boundary appended here: curl always generates and
+        // sends its own real boundary parameter for a multipart body (any
+        // POSTFIELDS array containing a CURLFile), appending it to
+        // whatever Content-Type is already set. Appending a hand-rolled
+        // boundary here produced a Content-Type whose declared boundary
+        // never matched the one curl actually used to encode the body, so
+        // receiving servers could never correctly parse the multipart
+        // payload (confirmed: $_POST/$_FILES both came back empty).
+        return $this->contentType('multipart/form-data');
     }
 
     /**
@@ -448,6 +456,14 @@ class Client implements ClientInterface
             return $this;
         }
 
+        // curl always sends the body as multipart when any CURLFile is
+        // present in CURLOPT_POSTFIELDS, regardless of what Content-Type
+        // says — declaring anything other than multipart/form-data here
+        // (the default from the constructor's asJson() is otherwise left
+        // in place) meant the header lied about the actual body encoding,
+        // so receiving servers never parsed the upload correctly.
+        $this->asMultipart();
+
         $mimeType = $mimeType ?? mime_content_type($filePath);
 
         $fileName = $reName ?? pathinfo($filePath)['basename'];
@@ -478,11 +494,11 @@ class Client implements ClientInterface
             fclose($cURLFile);
         }
 
-        if ($files = $this->getFiles()) {
-            foreach ($files as $file) {
-                fclose($file->getStream());
-            }
-        }
+        // CURLFile (used by getFiles()/attach()) has no getStream() method
+        // and nothing to close here: curl opens/reads/closes the
+        // underlying file itself. This unconditionally fataled ("Call to
+        // undefined method CURLFile::getStream()") on every attach() use,
+        // in __destruct(), regardless of PHP version.
 
         return $this;
     }

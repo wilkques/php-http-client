@@ -423,6 +423,10 @@ class Pool
      */
     public function __destruct()
     {
-        $this->getHandle()->close();
+        // A Pool that's constructed but never actually used to run pool()
+        // (newMultiHandle() is only called from within pool()) has a null
+        // $handle — matches the same null-safe pattern CurlHandle::close()/
+        // CurlMultiHandle::close() already use elsewhere in this package.
+        $this->getHandle() && $this->getHandle()->close();
     }
 }
