@@ -3,6 +3,8 @@
 [![Latest Stable Version](https://poser.pugx.org/wilkques/http-client/v/stable)](https://packagist.org/packages/wilkques/http-client)
 [![License](https://poser.pugx.org/wilkques/http-client/license)](https://packagist.org/packages/wilkques/http-client)
 
+[English](README.md) | 繁體中文
+
 ## 如何開始
 
 ````
