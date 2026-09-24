@@ -147,4 +147,59 @@ class ResponseTest extends TestCase
             throw $e;
         }
     }
+
+    public function testThrowIfThrowsWhenConditionIsTrue()
+    {
+        list($raw, $info) = $this->buildRaw(200, array(), 'ok');
+
+        $response = new Response($raw, $info);
+
+        $this->expectExceptionCompat('Wilkques\\Http\\Exceptions\\RequestException');
+
+        // successful() response, but throwIf() ignores failed()/successful()
+        // entirely and throws purely off the given condition.
+        $response->throwIf(true);
+    }
+
+    public function testThrowIfDoesNotThrowWhenConditionIsFalse()
+    {
+        list($raw, $info) = $this->buildRaw(500, array(), 'boom');
+
+        $response = new Response($raw, $info);
+
+        $this->assertSame($response, $response->throwIf(false));
+    }
+
+    public function testThrowIfAcceptsACallable()
+    {
+        list($raw, $info) = $this->buildRaw(200, array(), 'ok');
+
+        $response = new Response($raw, $info);
+
+        $this->expectExceptionCompat('Wilkques\\Http\\Exceptions\\RequestException');
+
+        $response->throwIf(function ($response) {
+            return $response->status() === 200;
+        });
+    }
+
+    public function testThrowUnlessThrowsWhenConditionIsFalse()
+    {
+        list($raw, $info) = $this->buildRaw(200, array(), 'ok');
+
+        $response = new Response($raw, $info);
+
+        $this->expectExceptionCompat('Wilkques\\Http\\Exceptions\\RequestException');
+
+        $response->throwUnless(false);
+    }
+
+    public function testThrowUnlessDoesNotThrowWhenConditionIsTrue()
+    {
+        list($raw, $info) = $this->buildRaw(500, array(), 'boom');
+
+        $response = new Response($raw, $info);
+
+        $this->assertSame($response, $response->throwUnless(true));
+    }
 }

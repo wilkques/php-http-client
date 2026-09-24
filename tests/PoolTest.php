@@ -52,4 +52,36 @@ class PoolTest extends TestCase
         $this->assertInstanceOf('Wilkques\\Http\\Exceptions\\CurlExecutionException', $responses['bad']);
         $this->assertNotNull($rejectedException);
     }
+
+    public function testPoolSupportsAnonymousUnkeyedEntries()
+    {
+        // Pool::__call() (the anonymous-entry proxy, documented in
+        // README.md's pool() example alongside alias()) was found
+        // commented out — confirmed pre-existing, unrelated to the PHP
+        // 5.3 downgrade — which made this exact documented usage fatal.
+        $pool = new Pool;
+
+        $serverUrl = $this->serverUrl();
+
+        $responses = $pool->pool(function ($pool) use ($serverUrl) {
+            $pool->get($serverUrl, array('n' => 'first'));
+            $pool->get($serverUrl, array('n' => 'second'));
+        });
+
+        $this->assertCount(2, $responses);
+
+        $values = array();
+
+        foreach ($responses as $response) {
+            $this->assertInstanceOf('Wilkques\\Http\\Response', $response);
+
+            $json = $response->json();
+
+            $values[] = $json['query']['n'];
+        }
+
+        sort($values);
+
+        $this->assertEquals(array('first', 'second'), $values);
+    }
 }

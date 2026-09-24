@@ -412,15 +412,23 @@ class Pool
     }
 
     /**
+     * Add an anonymous (unkeyed) request to the pool.
+     *
+     * Was commented out (pre-existing, unrelated to the PHP 5.3 downgrade)
+     * even though the README documents this exact usage
+     * ($pool->get(...) alongside $pool->alias('key')->get(...)) — confirmed
+     * that with this disabled, the documented anonymous form fatals with
+     * "Call to undefined method".
+     *
      * @param string $method
      * @param array $arguments
      *
      * @return mixed
      */
-    // public function __call(string $method, array $arguments)
-    // {
-    //     return $this->pool[] = $this->asyncRequest()->$method(...$arguments);
-    // }
+    public function __call($method, $arguments)
+    {
+        return $this->pool[] = call_user_func_array(array($this->asyncRequest(), $method), $arguments);
+    }
 
     /**
      * destruct

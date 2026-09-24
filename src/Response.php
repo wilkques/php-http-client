@@ -116,6 +116,48 @@ class Response implements \JsonSerializable, \ArrayAccess
     }
 
     /**
+     * Throw an exception, ignoring failed()/successful(), if the given
+     * condition (or the boolean return value of calling it with $this) is
+     * truthy.
+     *
+     * @param bool|callable $condition
+     *
+     * @throws RequestException
+     *
+     * @return static
+     */
+    public function throwIf($condition)
+    {
+        $shouldThrow = is_callable($condition) ? call_user_func($condition, $this) : $condition;
+
+        if ($shouldThrow) {
+            throw $this->getThrows();
+        }
+
+        return $this;
+    }
+
+    /**
+     * @see throwIf()
+     *
+     * @param bool|callable $condition
+     *
+     * @throws RequestException
+     *
+     * @return static
+     */
+    public function throwUnless($condition)
+    {
+        $shouldThrow = is_callable($condition) ? !call_user_func($condition, $this) : !$condition;
+
+        if ($shouldThrow) {
+            throw $this->getThrows();
+        }
+
+        return $this;
+    }
+
+    /**
      * @param mixed $callable
      *
      * @throws \UnexpectedValueException

@@ -151,6 +151,90 @@ class ClientTest extends TestCase
         $this->assertTrue($redirect->redirect());
     }
 
+    public function testFollowsRedirectsByDefault()
+    {
+        $client = new Client;
+
+        $target = $this->serverUrl('?marker=landed');
+
+        $response = $client->get($this->serverUrl('?redirect_to=' . urlencode($target)));
+
+        // Followed all the way to the target: final status is the
+        // target's 200, not the intermediate 302.
+        $this->assertTrue($response->ok());
+
+        $json = $response->json();
+
+        $this->assertEquals('landed', $json['query']['marker']);
+    }
+
+    public function testWithoutRedirectingStopsAtTheRedirectResponse()
+    {
+        $client = new Client;
+
+        $target = $this->serverUrl('?marker=landed');
+
+        $response = $client->withoutRedirecting()->get($this->serverUrl('?redirect_to=' . urlencode($target)));
+
+        $this->assertTrue($response->redirect());
+    }
+
+    public function testWithBasicAuthSendsAuthorizationHeader()
+    {
+        $client = new Client;
+
+        $response = $client->withBasicAuth('user', 'pass')->get($this->serverUrl());
+
+        $json = $response->json();
+
+        $this->assertEquals('Basic ' . base64_encode('user:pass'), $json['headers']['AUTHORIZATION']);
+    }
+
+    public function testWithCookiesSendsCookieHeader()
+    {
+        $client = new Client;
+
+        $response = $client->withCookies(array('a' => '1', 'b' => '2'))->get($this->serverUrl());
+
+        $json = $response->json();
+
+        $this->assertEquals('a=1; b=2', $json['headers']['COOKIE']);
+    }
+
+    public function testWithUserAgentSendsUserAgentHeader()
+    {
+        $client = new Client;
+
+        $response = $client->withUserAgent('wilkques-http-test/1.0')->get($this->serverUrl());
+
+        $json = $response->json();
+
+        $this->assertEquals('wilkques-http-test/1.0', $json['headers']['USER-AGENT']);
+    }
+
+    public function testRetryStopsAfterExhaustingAttemptsOnTransportFailure()
+    {
+        $client = new Client;
+
+        $client->retry(3, 10);
+
+        $this->expectExceptionCompat('Wilkques\\Http\\Exceptions\\CurlExecutionException');
+
+        $client->get('http://this-host-does-not-resolve.invalid/');
+    }
+
+    public function testRetryDoesNotRetryOnHttpErrorStatus()
+    {
+        $client = new Client;
+
+        // A 500 response is not a transport failure (execCurl() doesn't
+        // throw for it), so retry() shouldn't matter here — this just
+        // confirms retry() doesn't change normal response handling.
+        $response = $client->retry(3)->get($this->serverUrl('?status=500'));
+
+        $this->assertTrue($response->serverError());
+    }
+
     public function testUnreachableHostThrowsCurlExecutionException()
     {
         $this->expectExceptionCompat('Wilkques\\Http\\Exceptions\\CurlExecutionException');

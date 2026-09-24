@@ -19,7 +19,12 @@ class Client implements ClientInterface
         'curl_options' => array(
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HEADER => true,
-            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS,
+            // Raw curl defaults to not following redirects at all, unlike
+            // Laravel/Guzzle (which follows up to 5 by default) — matching
+            // that here since silently not following a 301/302 is a much
+            // more surprising default than the reverse.
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
         ),
     );
 
@@ -28,6 +33,12 @@ class Client implements ClientInterface
 
     /** @var bool */
     protected $async = false;
+
+    /** @var int */
+    protected $retryTimes = 1;
+
+    /** @var int */
+    protected $retrySleep = 0;
 
     /**
      * @param CurlHandle|null $handle
@@ -41,6 +52,13 @@ class Client implements ClientInterface
         // CURLPROTO_HTTPS | CURLPROTO_HTTP ("Constant expressions" support
         // for property defaults was added in PHP 5.6).
         $this->setCurlOption(CURLOPT_PROTOCOLS, CURLPROTO_HTTPS | CURLPROTO_HTTP);
+
+        // Redirect targets allowed the same protocols as the initial
+        // request itself — restricting this to HTTPS-only (the previous
+        // default) silently defeated CURLOPT_FOLLOWLOCATION above for any
+        // plain http:// redirect chain, which is a completely normal thing
+        // for an API to do, not something to treat as a security downgrade.
+        $this->setCurlOption(CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTPS | CURLPROTO_HTTP);
 
         $this->asJson()->acceptJson();
     }
@@ -93,6 +111,119 @@ class Client implements ClientInterface
     public function withToken($token, $type = 'Bearer')
     {
         return $this->setHeader('Authorization', "{$type} {$token}");
+    }
+
+    /**
+     * @param string $username
+     * @param string $password
+     *
+     * @return static
+     */
+    public function withBasicAuth($username, $password)
+    {
+        return $this->setCurlOption(CURLOPT_HTTPAUTH, CURLAUTH_BASIC)
+            ->setCurlOption(CURLOPT_USERPWD, "{$username}:{$password}");
+    }
+
+    /**
+     * @param string $username
+     * @param string $password
+     *
+     * @return static
+     */
+    public function withDigestAuth($username, $password)
+    {
+        return $this->setCurlOption(CURLOPT_HTTPAUTH, CURLAUTH_DIGEST)
+            ->setCurlOption(CURLOPT_USERPWD, "{$username}:{$password}");
+    }
+
+    /**
+     * @param array $cookies key => value
+     *
+     * @return static
+     */
+    public function withCookies(array $cookies)
+    {
+        $pairs = array();
+
+        foreach ($cookies as $key => $value) {
+            $pairs[] = "{$key}={$value}";
+        }
+
+        return $this->setCurlOption(CURLOPT_COOKIE, implode('; ', $pairs));
+    }
+
+    /**
+     * @param string $userAgent
+     *
+     * @return static
+     */
+    public function withUserAgent($userAgent)
+    {
+        return $this->setCurlOption(CURLOPT_USERAGENT, $userAgent);
+    }
+
+    /**
+     * Total time in seconds allowed for the whole request.
+     *
+     * @param int $seconds
+     *
+     * @return static
+     */
+    public function timeout($seconds)
+    {
+        return $this->setCurlOption(CURLOPT_TIMEOUT, $seconds);
+    }
+
+    /**
+     * Time in seconds allowed to establish the connection.
+     *
+     * @param int $seconds
+     *
+     * @return static
+     */
+    public function connectTimeout($seconds)
+    {
+        return $this->setCurlOption(CURLOPT_CONNECTTIMEOUT, $seconds);
+    }
+
+    /**
+     * @return static
+     */
+    public function withoutRedirecting()
+    {
+        return $this->setCurlOption(CURLOPT_FOLLOWLOCATION, false);
+    }
+
+    /**
+     * @param int $max
+     *
+     * @return static
+     */
+    public function maxRedirects($max)
+    {
+        return $this->setCurlOption(CURLOPT_FOLLOWLOCATION, true)
+            ->setCurlOption(CURLOPT_MAXREDIRS, $max);
+    }
+
+    /**
+     * Retry a request that fails at the transport level (DNS/connection/
+     * timeout — a CurlExecutionException). Does not retry on HTTP error
+     * status codes (4xx/5xx) — a request that got a response, even a
+     * failed one, isn't a transport failure.
+     *
+     * @param int $times
+     * @param int $sleepMilliseconds
+     *
+     * @return static
+     */
+    public function retry($times, $sleepMilliseconds = 0)
+    {
+        $this->retryTimes = max((int) $times, 1);
+
+        $this->retrySleep = $sleepMilliseconds;
+
+        return $this;
     }
 
     /**
@@ -571,7 +702,30 @@ class Client implements ClientInterface
             return $this;
         }
 
-        return new Response($this->execCurl(), $this->getInfo());
+        $attempt = 0;
+
+        while (true) {
+            $attempt++;
+
+            try {
+                return new Response($this->execCurl(), $this->getInfo());
+            } catch (CurlExecutionException $e) {
+                if ($attempt >= $this->retryTimes) {
+                    throw $e;
+                }
+
+                if ($this->retrySleep > 0) {
+                    usleep($this->retrySleep * 1000);
+                }
+
+                // The handle that just failed is spent — re-init before
+                // trying again, reapplying every option already staged
+                // (url/method/headers/body all live in $this->options, not
+                // on the handle itself, so nothing besides the handle
+                // needs rebuilding here).
+                $this->init()->setoptArray($this->getCurlOptions());
+            }
+        }
     }
 
     /**
