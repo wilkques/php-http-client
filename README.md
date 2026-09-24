@@ -68,6 +68,30 @@ use Wilkques\Http\Http;
     $response = Http::attach('<post key name>', '<file path>', '<file type>', '<file name>'); // add file
     ```
 
+1. `withBasicAuth`
+
+    ```php
+    $response = Http::withBasicAuth('<username>', '<password>'); // add Basic Authorization header
+    ```
+
+1. `withDigestAuth`
+
+    ```php
+    $response = Http::withDigestAuth('<username>', '<password>'); // use HTTP Digest auth
+    ```
+
+1. `withCookies`
+
+    ```php
+    $response = Http::withCookies(['session' => '<value>']); // add Cookie header
+    ```
+
+1. `withUserAgent`
+
+    ```php
+    $response = Http::withUserAgent('<user agent>'); // set User-Agent header
+    ```
+
 1. `get`
 
     ```php
@@ -96,6 +120,38 @@ use Wilkques\Http\Http;
 
     ```php
     $response = Http::delete('<url>', [ ... ]) // Http method delete
+    ```
+
+1. `timeout`
+
+    ```php
+    $response = Http::timeout(30); // total request time limit, in seconds
+    ```
+
+1. `connectTimeout`
+
+    ```php
+    $response = Http::connectTimeout(10); // connection-establishment time limit, in seconds
+    ```
+
+1. `withoutRedirecting`
+
+    ```php
+    $response = Http::withoutRedirecting()->get('<url>'); // stop at the first 3xx instead of following it
+    ```
+
+1. `maxRedirects`
+
+    ```php
+    $response = Http::maxRedirects(3)->get('<url>'); // follows redirects by default (up to 5); this changes the limit
+    ```
+
+1. `retry`
+
+    ```php
+    // retries only on a transport-level failure (DNS/connection/timeout),
+    // not on an HTTP error status like 4xx/5xx
+    $response = Http::retry(3, 100)->get('<url>'); // up to 3 attempts, 100ms between attempts
     ```
 
 1. `status`
@@ -178,6 +234,18 @@ use Wilkques\Http\Http;
     $response->throwException(function ($response, $exception) {
         // code
         // return exception
+    });
+    ```
+
+1. `throwIf` / `throwUnless`
+
+    ```php
+    // throws regardless of failed()/successful() — purely off the given
+    // condition (bool, or callable(Response): bool)
+    $response->throwIf($response->header('X-Foo') === null);
+
+    $response->throwUnless(function ($response) {
+        return $response->header('X-Foo') !== null;
     });
     ```
 

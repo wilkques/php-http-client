@@ -68,6 +68,30 @@ use Wilkques\Http\Http;
     $response = Http::attach('<post key name>', '<file path>', '<file type>', '<file name>'); // 附加檔案
     ```
 
+1. `withBasicAuth`
+
+    ```php
+    $response = Http::withBasicAuth('<username>', '<password>'); // 加上 Basic Authorization header
+    ```
+
+1. `withDigestAuth`
+
+    ```php
+    $response = Http::withDigestAuth('<username>', '<password>'); // 使用 HTTP Digest 驗證
+    ```
+
+1. `withCookies`
+
+    ```php
+    $response = Http::withCookies(['session' => '<value>']); // 加上 Cookie header
+    ```
+
+1. `withUserAgent`
+
+    ```php
+    $response = Http::withUserAgent('<user agent>'); // 設定 User-Agent header
+    ```
+
 1. `get`
 
     ```php
@@ -96,6 +120,38 @@ use Wilkques\Http\Http;
 
     ```php
     $response = Http::delete('<url>', [ ... ]) // Http method delete
+    ```
+
+1. `timeout`
+
+    ```php
+    $response = Http::timeout(30); // 整個請求的時間上限（秒）
+    ```
+
+1. `connectTimeout`
+
+    ```php
+    $response = Http::connectTimeout(10); // 建立連線的時間上限（秒）
+    ```
+
+1. `withoutRedirecting`
+
+    ```php
+    $response = Http::withoutRedirecting()->get('<url>'); // 遇到第一個 3xx 就停下來，不自動跟隨
+    ```
+
+1. `maxRedirects`
+
+    ```php
+    $response = Http::maxRedirects(3)->get('<url>'); // 預設會跟隨重新導向（最多 5 次），這個方法可以改上限
+    ```
+
+1. `retry`
+
+    ```php
+    // 只有在傳輸層失敗（DNS／連線／timeout）才會重試，
+    // HTTP 錯誤狀態碼（4xx/5xx）不會觸發重試
+    $response = Http::retry(3, 100)->get('<url>'); // 最多重試 3 次，每次間隔 100ms
     ```
 
 1. `status`
@@ -178,6 +234,18 @@ use Wilkques\Http\Http;
     $response->throwException(function ($response, $exception) {
         // code
         // 回傳例外
+    });
+    ```
+
+1. `throwIf` / `throwUnless`
+
+    ```php
+    // 不管 failed()/successful() 的結果，純粹依照給定的條件
+    //（bool，或 callable(Response): bool）決定要不要丟例外
+    $response->throwIf($response->header('X-Foo') === null);
+
+    $response->throwUnless(function ($response) {
+        return $response->header('X-Foo') !== null;
     });
     ```
 
