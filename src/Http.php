@@ -9,6 +9,7 @@ use Wilkques\Http\Client;
  * @method static \Wilkques\Http\Client asJson() add header Content-Type application/json; charset=utf-8
  * @method static \Wilkques\Http\Client asMultipart() add header Content-Type multipart/form-data; charset=utf-8
  * @method static \Wilkques\Http\Client withHeaders(array $headers) add headers
+ * @method static \Wilkques\Http\Client setHeader(string $key, $value) add header
  * @method static \Wilkques\Http\Client withToken(string $token, string $type = 'Bearer') add Authorization token
  * @method static \Wilkques\Http\Client attach(string|array $name, ?string $filePath = null, ?string $mimeType = null, ?string $reName = null) file upload
  * @method static \Wilkques\Http\Client attachUploadFile(string $filePath) Only send one File.
