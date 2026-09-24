@@ -14,14 +14,18 @@ class HttpTest extends TestCase
 
         $response = $http->get($this->serverUrl(), array('via' => 'http-facade'));
 
-        $this->assertEquals(array('via' => 'http-facade'), $response->json()['query']);
+        $json = $response->json();
+
+        $this->assertEquals(array('via' => 'http-facade'), $json['query']);
     }
 
     public function testStaticCallDelegatesToClientMethod()
     {
         $response = Http::get($this->serverUrl(), array('via' => 'static-facade'));
 
-        $this->assertEquals(array('via' => 'static-facade'), $response->json()['query']);
+        $json = $response->json();
+
+        $this->assertEquals(array('via' => 'static-facade'), $json['query']);
     }
 
     public function testNewClientReusesTheSameInstanceAcrossCalls()
@@ -59,9 +63,9 @@ class HttpTest extends TestCase
     {
         $http = new Http;
 
-        // as() only exists on Pool, not Client, so __call() must fall
-        // through newPool()->as() rather than newClient()->as().
-        $client = $http->as('via-http-pool-fallthrough');
+        // alias() only exists on Pool, not Client, so __call() must fall
+        // through newPool()->alias() rather than newClient()->alias().
+        $client = $http->alias('via-http-pool-fallthrough');
 
         $this->assertInstanceOf('Wilkques\\Http\\Client', $client);
     }

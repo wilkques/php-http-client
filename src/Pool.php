@@ -18,7 +18,7 @@ class Pool
     protected $pool;
 
     /** @var array */
-    protected $options = [];
+    protected $options = array();
 
     public function __construct()
     {
@@ -27,10 +27,10 @@ class Pool
 
     public function boot()
     {
-        return $this->setOptions([
-            'response'  => [
+        return $this->setOptions(array(
+            'response'  => array(
                 'sort'  => true
-            ],
+            ),
             'timeout'   => 100,
             'fulfilled' => function (Response $response, $key) {
                 return $response;
@@ -41,7 +41,7 @@ class Pool
             'runtimeRejected' => function (CurlMultiExecutionException $e) {
                 return $e;
             }
-        ]);
+        ));
     }
 
     /**
@@ -57,12 +57,12 @@ class Pool
      */
     public function newMultiHandle()
     {
-        return $this->handle = $this->getHandle() ?? new CurlMultiHandle;
+        return $this->handle = $this->getHandle() ?: new CurlMultiHandle;
     }
 
     /**
      * @param array $options
-     * 
+     *
      * @return static
      */
     public function setOptions(array $options)
@@ -75,7 +75,7 @@ class Pool
     /**
      * @param int $curlOpt CURLOPT
      * @param mixed $value
-     * 
+     *
      * @return static
      */
     public function setOption($curlOpt, $value)
@@ -87,7 +87,7 @@ class Pool
 
     /**
      * @param array $options
-     * 
+     *
      * @return array
      */
     public function getOptions()
@@ -98,7 +98,7 @@ class Pool
     /**
      * @param string|int $curlOpt CURLOPT
      * @param mixed|null $default
-     * 
+     *
      * @return mixed|null
      */
     public function getOption($curlOpt, $default = null)
@@ -109,7 +109,7 @@ class Pool
     /**
      * @param int $curlOpt CURLOPT
      * @param mixed $value
-     * 
+     *
      * @return static
      */
     public function setCurlMultiOption($curlOpt, $value)
@@ -118,22 +118,22 @@ class Pool
     }
 
     /**
-     * @param mixed|[] $default
-     * 
+     * @param mixed|array $default
+     *
      * @return array
      */
-    public function getCurlMultiOptions($default = [])
+    public function getCurlMultiOptions($default = array())
     {
         return $this->getOption("curl_multi_options", $default);
     }
 
     /**
      * @param int $curlOpt CURLOPT
-     * @param mixed|[] $default
-     * 
+     * @param mixed|array $default
+     *
      * @return array
      */
-    public function getCurlMultiOption($curlOpt, $default = [])
+    public function getCurlMultiOption($curlOpt, $default = array())
     {
         return $this->getOption("curl_multi_options.{$curlOpt}", $default);
     }
@@ -141,7 +141,7 @@ class Pool
     /**
      * @param int $curlOpt CURLOPT
      * @param mixed $value
-     * 
+     *
      * @return static
      */
     public function setCurlOption($curlOpt, $value)
@@ -150,29 +150,29 @@ class Pool
     }
 
     /**
-     * @param mixed|[] $default
-     * 
+     * @param mixed|array $default
+     *
      * @return array
      */
-    public function getCurlOptions($default = [])
+    public function getCurlOptions($default = array())
     {
         return $this->getOption("curl_options", $default);
     }
 
     /**
      * @param int $curlOpt CURLOPT
-     * @param mixed|[] $default
-     * 
+     * @param mixed|array $default
+     *
      * @return array
      */
-    public function getCurlOption($curlOpt, $default = [])
+    public function getCurlOption($curlOpt, $default = array())
     {
         return $this->getOption("curl_options.{$curlOpt}", $default);
     }
 
     /**
      * @param bool|true $default
-     * 
+     *
      * @return bool|true
      */
     public function getResponseOptionSort($default = true)
@@ -182,7 +182,7 @@ class Pool
 
     /**
      * @param float $default
-     * 
+     *
      * @return float
      */
     public function getTimeOut($default = 100)
@@ -217,10 +217,10 @@ class Pool
     /**
      * @param callable|array|null $pool
      * @param array $options
-     * 
+     *
      * @return array
      */
-    public function pool($pool = null, array $options = [])
+    public function pool($pool = null, array $options = array())
     {
         // init
         $this->setOptions($options)->newMultiHandle()->init();
@@ -246,10 +246,10 @@ class Pool
 
     /**
      * @param array $options
-     * 
+     *
      * @return static
      */
-    protected function curlMultiOptions(array $options = [])
+    protected function curlMultiOptions(array $options = array())
     {
         foreach ($options as $key => $option) {
             $this->handle->setOpt($key, $option);
@@ -260,7 +260,7 @@ class Pool
 
     /**
      * @param array $pool
-     * 
+     *
      * @return static
      */
     protected function addHandle($pool)
@@ -271,8 +271,6 @@ class Pool
             );
 
             $this->getHandle()->addHandle($client);
-
-            $client->close();
         }
 
         return $this;
@@ -314,7 +312,7 @@ class Pool
      */
     protected function clientCurlPool()
     {
-        $pool = [];
+        $pool = array();
 
         foreach ($this->pool as $key => $client) {
             $pool[$key] = $client->getCurlHandle();
@@ -326,7 +324,7 @@ class Pool
     /**
      * @param \Closure|callback $fulfilled
      * @param \Closure|callback $rejected
-     * 
+     *
      * @return array
      */
     protected function clientHandle($fulfilled, $rejected)
@@ -345,7 +343,13 @@ class Pool
 
             $handle->removeHandle($client);
 
-            if ($errno = $client->errno()) {
+            // Not $client->errno(): on some older libcurl builds (confirmed
+            // on the ancient libcurl bundled with a real PHP 5.3.10 build),
+            // curl_errno() on a handle that already finished inside a
+            // multi-exec loop stays 0 even when it failed — only the
+            // "result" field curl_multi_info_read() itself hands back is
+            // reliably accurate across libcurl versions for this case.
+            if ($errno = $done['result']) {
                 $response[$key] = $rejected(new CurlExecutionException($client->error(), $errno), $key);
             } else {
                 $response[$key] = $fulfilled(new Response($handle->content($client), $client->getInfo()), $key);
@@ -379,10 +383,10 @@ class Pool
      * Add a request to the pool with a key.
      *
      * @param  string  $key
-     * 
+     *
      * @return Client
      */
-    public function as(string $key)
+    public function alias($key)
     {
         return $this->pool[$key] = $this->asyncRequest();
     }
@@ -410,7 +414,7 @@ class Pool
     /**
      * @param string $method
      * @param array $arguments
-     * 
+     *
      * @return mixed
      */
     // public function __call(string $method, array $arguments)

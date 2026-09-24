@@ -5,6 +5,11 @@
 
 [English](README.md) | 繁體中文
 
+## 需求
+
+- PHP >= 5.3（已在 5.3、7.4、8.3 測試過）
+- ext-curl
+
 ## 如何開始
 
 ````
@@ -162,15 +167,15 @@ use Wilkques\Http\Http;
 1. `throw`
 
     ```php
-    $response->throw(); // 丟出例外
+    $response->throwException(); // 丟出例外
     
     // 或
 
-    $response->throw(new \Exception('<message>', '<code>'));
+    $response->throwException(new \Exception('<message>', '<code>'));
 
     // 或
 
-    $response->throw(function ($response, $exception) {
+    $response->throwException(function ($response, $exception) {
         // code
         // 回傳例外
     });
@@ -183,8 +188,8 @@ use Wilkques\Http\Http;
         return [
             $pool->get('http://example.com/get', ['abc' => 123]),
             $pool->post('http://example.com/post', ['def' => 456]),
-            $pool->as('get')->get('http://example.com/get', ['ghi' => 789]),
-            $pool->as('post')->post('http://example.com/post', ['jkl' => 012]),
+            $pool->alias('get')->get('http://example.com/get', ['ghi' => 789]),
+            $pool->alias('post')->post('http://example.com/post', ['jkl' => 012]),
         ];
     }, [
         'response'  => [

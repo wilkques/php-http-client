@@ -71,7 +71,7 @@ class CurlMultiHandle
      * 
      * @return int
      */
-    public function select(float $timeout = 1.0)
+    public function select($timeout = 1.0)
     {
         return curl_multi_select($this->getCurlMultiHandle(), $timeout);
     }
@@ -91,7 +91,7 @@ class CurlMultiHandle
      * 
      * @return array|false
      */
-    public function getInfo(?int &$queue = null)
+    public function getInfo(&$queue = null)
     {
         if (!$queue) {
             return curl_multi_info_read($this->getCurlMultiHandle());
@@ -115,16 +115,27 @@ class CurlMultiHandle
      */
     public function errorno()
     {
+        // curl_multi_errno() doesn't exist before PHP 5.5 — there's no
+        // real equivalent to fall back to pre-5.5, so this path can only
+        // ever report a generic failure there (see error() below).
+        if (!function_exists('curl_multi_errno')) {
+            return -1;
+        }
+
         return curl_multi_errno($this->getCurlMultiHandle());
     }
 
     /**
      * @param int $status
-     * 
+     *
      * @return string
      */
     public function error($status)
     {
+        if (!function_exists('curl_multi_strerror')) {
+            return 'cURL multi error #' . $status;
+        }
+
         return curl_multi_strerror($status);
     }
 

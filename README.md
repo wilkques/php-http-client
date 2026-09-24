@@ -5,6 +5,11 @@
 
 English | [繁體中文](README_ZH.md)
 
+## Requirements
+
+- PHP >= 5.3 (tested against 5.3, 7.4, 8.3)
+- ext-curl
+
 ## How to start
 
 ````
@@ -162,15 +167,15 @@ use Wilkques\Http\Http;
 1. `throw`
 
     ```php
-    $response->throw(); // throw exception
+    $response->throwException(); // throw exception
     
     // or
     
-    $response->throw(new \Exception('<message>', '<code>'));
+    $response->throwException(new \Exception('<message>', '<code>'));
 
     // or
 
-    $response->throw(function ($response, $exception) {
+    $response->throwException(function ($response, $exception) {
         // code
         // return exception
     });
@@ -183,8 +188,8 @@ use Wilkques\Http\Http;
         return [
             $pool->get('http://example.com/get', ['abc' => 123]),
             $pool->post('http://example.com/post', ['def' => 456]),
-            $pool->as('get')->get('http://example.com/get', ['ghi' => 789]),
-            $pool->as('post')->post('http://example.com/post', ['jkl' => 012]),
+            $pool->alias('get')->get('http://example.com/get', ['ghi' => 789]),
+            $pool->alias('post')->post('http://example.com/post', ['jkl' => 012]),
         ];
     }, [
         'response'  => [

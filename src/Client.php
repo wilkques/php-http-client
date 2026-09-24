@@ -9,23 +9,22 @@ use Wilkques\Http\Exceptions\CurlExecutionException;
 class Client implements ClientInterface
 {
     /** @var array */
-    private $headers = [];
+    private $headers = array();
 
     /** @var CurlHandle */
     private $handle;
 
     /** @var array */
-    private $options = [
-        'curl_options' => [
+    private $options = array(
+        'curl_options' => array(
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HEADER => true,
-            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS | CURLPROTO_HTTP,
             CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS,
-        ],
-    ];
+        ),
+    );
 
     /** @var array */
-    private $files = [];
+    private $files = array();
 
     /** @var bool */
     protected $async = false;
@@ -33,19 +32,25 @@ class Client implements ClientInterface
     /**
      * @param CurlHandle|null $handle
      */
-    public function __construct(?CurlHandle $handle = null)
+    public function __construct(CurlHandle $handle = null)
     {
         $handle && $this->setHandle($handle);
+
+        // Not a property default: PHP 5.3 only allows a bare constant
+        // (or literal) there, not a constant-combining expression like
+        // CURLPROTO_HTTPS | CURLPROTO_HTTP ("Constant expressions" support
+        // for property defaults was added in PHP 5.6).
+        $this->setCurlOption(CURLOPT_PROTOCOLS, CURLPROTO_HTTPS | CURLPROTO_HTTP);
 
         $this->asJson()->acceptJson();
     }
 
     /**
      * @param string $url
-     * 
+     *
      * @return static
      */
-    public function setUrl(string $url)
+    public function setUrl($url)
     {
         return $this->setCurlOption(CURLOPT_URL, $url);
     }
@@ -62,7 +67,7 @@ class Client implements ClientInterface
 
     /**
      * @param CurlHandle $handle
-     * 
+     *
      * @return static
      */
     public function setHandle(CurlHandle $handle)
@@ -82,10 +87,10 @@ class Client implements ClientInterface
 
     /**
      * @param string $channelToken
-     * 
+     *
      * @return static
      */
-    public function withToken(string $token, string $type = 'Bearer')
+    public function withToken($token, $type = 'Bearer')
     {
         return $this->setHeader('Authorization', "{$type} {$token}");
     }
@@ -93,10 +98,10 @@ class Client implements ClientInterface
     /**
      * @param string $url
      * @param array|[] $data
-     * 
+     *
      * @return string
      */
-    protected function urlBuilder(string $url, $data = [])
+    protected function urlBuilder($url, $data = array())
     {
         if (!empty($data)) {
             $url .= '?' . Arrays::query($data);
@@ -110,12 +115,12 @@ class Client implements ClientInterface
      *
      * @param string $url Request URL.
      * @param array[] $query Request body
-     * 
+     *
      * @return Response Response of API request.
-     * 
+     *
      * @throws CurlExecutionException
      */
-    public function get(string $url, array $query = [])
+    public function get($url, array $query = array())
     {
         return $this->methodGet()->sendRequest('GET', $this->urlBuilder($url, $query));
     }
@@ -126,12 +131,12 @@ class Client implements ClientInterface
      * @param string $url Request URL.
      * @param array[] $data Request body or resource path.
      * @param array|null $query
-     * 
+     *
      * @return Response Response of API request.
-     * 
+     *
      * @throws CurlExecutionException
      */
-    public function put(string $url, array $data = [], ?array $query = null)
+    public function put($url, array $data = array(), array $query = null)
     {
         return $this->sendRequest('PUT', $this->urlBuilder($url, $query), $data);
     }
@@ -142,12 +147,12 @@ class Client implements ClientInterface
      * @param string $url Request URL.
      * @param array[] $data Request body or resource path.
      * @param array|null $query
-     * 
+     *
      * @return Response Response of API request.
-     * 
+     *
      * @throws CurlExecutionException
      */
-    public function patch(string $url, array $data = [], ?array $query = null)
+    public function patch($url, array $data = array(), array $query = null)
     {
         return $this->sendRequest('PATCH', $this->urlBuilder($url, $query), $data);
     }
@@ -159,12 +164,12 @@ class Client implements ClientInterface
      * @param string $url Request URL.
      * @param array[] $data Request body or resource path.
      * @param array|null $query
-     * 
+     *
      * @return Response Response of API request.
-     * 
+     *
      * @throws CurlExecutionException
      */
-    public function post(string $url, array $data = [], ?array $query = null)
+    public function post($url, array $data = array(), array $query = null)
     {
         return $this->methodPost()->sendRequest('POST', $this->urlBuilder($url, $query), $data);
     }
@@ -174,19 +179,19 @@ class Client implements ClientInterface
      *
      * @param string $url Request URL.
      * @param array[] $query
-     * 
+     *
      * @return Response Response of API request.
-     * 
+     *
      * @throws CurlExecutionException
      */
-    public function delete(string $url, array $query = [])
+    public function delete($url, array $query = array())
     {
         return $this->sendRequest('DELETE', $this->urlBuilder($url, $query));
     }
 
     /**
      * @param array $headers
-     * 
+     *
      * @return static
      */
     public function withHeaders(array $headers)
@@ -199,12 +204,12 @@ class Client implements ClientInterface
     /**
      * @param string $key
      * @param mixed $value
-     * 
+     *
      * @return array
      */
-    public function setHeader(string $key, $value)
+    public function setHeader($key, $value)
     {
-        return $this->withHeaders([$key => $value]);
+        return $this->withHeaders(array($key => $value));
     }
 
     /**
@@ -217,10 +222,10 @@ class Client implements ClientInterface
 
     /**
      * @param string $key
-     * 
+     *
      * @return string
      */
-    public function getHeader(string $key)
+    public function getHeader($key)
     {
         return Arrays::get($this->getHeaders(), $key);
     }
@@ -229,10 +234,10 @@ class Client implements ClientInterface
      * Specify the request's content type.
      *
      * @param  string  $contentType
-     * 
+     *
      * @return static
      */
-    public function contentType(string $contentType)
+    public function contentType($contentType)
     {
         return $this->setHeader('Content-Type', $contentType);
     }
@@ -271,7 +276,7 @@ class Client implements ClientInterface
 
     /**
      * @param array $options
-     * 
+     *
      * @return static
      */
     public function setOptions(array $options)
@@ -284,7 +289,7 @@ class Client implements ClientInterface
     /**
      * @param int $key
      * @param mixed $value
-     * 
+     *
      * @return static
      */
     public function setOption($key, $value)
@@ -305,7 +310,7 @@ class Client implements ClientInterface
     /**
      * @param string|int $key
      * @param mixed|null $default
-     * 
+     *
      * @return mixed|null
      */
     public function getOption($key, $default = null)
@@ -316,7 +321,7 @@ class Client implements ClientInterface
     /**
      * @param string|int $curlOpt
      * @param mixed $value
-     * 
+     *
      * @return static
      */
     public function setCurlOption($curlOpt, $value)
@@ -334,7 +339,7 @@ class Client implements ClientInterface
 
     /**
      * @param string|int $curlOpt
-     * 
+     *
      * @return mixed|null
      */
     public function getCurlOption($curlOpt)
@@ -352,10 +357,10 @@ class Client implements ClientInterface
 
     /**
      * @param string $method
-     * 
+     *
      * @return static
      */
-    private function httpMethod(string $method)
+    private function httpMethod($method)
     {
         return $this->setCurlOption(CURLOPT_CUSTOMREQUEST, $method);
     }
@@ -410,7 +415,7 @@ class Client implements ClientInterface
 
     /**
      * @param string|array|null $fields
-     * 
+     *
      * @return static
      */
     private function postFields($fields)
@@ -420,7 +425,7 @@ class Client implements ClientInterface
 
     /**
      * @param string|array|null $fields
-     * 
+     *
      * @return static
      */
     protected function fieldsEncode($fields)
@@ -443,14 +448,14 @@ class Client implements ClientInterface
      * @param string|null $filePath
      * @param string|null $mimeType
      * @param string|null $reName
-     * 
+     *
      * @return static
      */
-    public function attach($name, string $filePath = '', ?string $mimeType = null, ?string $reName = null)
+    public function attach($name, $filePath = '', $mimeType = null, $reName = null)
     {
         if (is_array($name)) {
             foreach ($name as $file) {
-                $this->attach(...$file);
+                call_user_func_array(array($this, 'attach'), $file);
             }
 
             return $this;
@@ -464,21 +469,25 @@ class Client implements ClientInterface
         // so receiving servers never parsed the upload correctly.
         $this->asMultipart();
 
-        $mimeType = $mimeType ?? mime_content_type($filePath);
+        if (is_null($mimeType)) {
+            $mimeType = mime_content_type($filePath);
+        }
 
-        $fileName = $reName ?? pathinfo($filePath)['basename'];
+        $pathInfo = pathinfo($filePath);
+
+        $fileName = is_null($reName) ? $pathInfo['basename'] : $reName;
 
         return $this->setFiles($name, $this->createFile($filePath, $mimeType, $fileName));
     }
 
     /**
      * Only send one File
-     * 
+     *
      * @param string $filePath
-     * 
+     *
      * @return static
      */
-    public function attachUploadFile(string $filePath)
+    public function attachUploadFile($filePath)
     {
         return $this->methodPut()->setCurlOption(CURLOPT_UPLOAD, true)
             ->setCurlOption(CURLOPT_INFILE, fopen($filePath, 'rb'))
@@ -505,11 +514,11 @@ class Client implements ClientInterface
 
     /**
      * @param string $key
-     * @param \CURLFile $cURLFile
-     * 
+     * @param \CURLFile|string $cURLFile
+     *
      * @return static
      */
-    public function setFiles(string $key, \CURLFile $cURLFile)
+    public function setFiles($key, $cURLFile)
     {
         $this->files[$key] = $cURLFile;
 
@@ -526,7 +535,7 @@ class Client implements ClientInterface
 
     /**
      * @param string|array|null $requestBody
-     * 
+     *
      * @return static cUrl options
      */
     private function buildRequestBody($requestBody = null)
@@ -542,12 +551,12 @@ class Client implements ClientInterface
      * @param string $method
      * @param string $url
      * @param string|array|null $requestBody
-     * 
+     *
      * @throws CurlExecutionException
-     * 
+     *
      * @return Response
      */
-    private function sendRequest(string $method, string $url, $requestBody = null)
+    private function sendRequest($method, $url, $requestBody = null)
     {
         $this->setUrl($url)
             ->httpMethod($method)
@@ -588,23 +597,23 @@ class Client implements ClientInterface
     /**
      * @param string $method
      * @param array $arguments
-     * 
+     *
      * @return mixed
      */
-    public function __call(string $method, array $arguments)
+    public function __call($method, array $arguments)
     {
-        return $this->newCurl()->$method(...$arguments);
+        return call_user_func_array(array($this->newCurl(), $method), $arguments);
     }
 
     /**
      * @param string $method
      * @param array $arguments
-     * 
+     *
      * @return mixed
      */
     public static function __callStatic($method, $arguments)
     {
-        return (new static)->$method(...$arguments);
+        return call_user_func_array(array(new static, $method), $arguments);
     }
 
     /**

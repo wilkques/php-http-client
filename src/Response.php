@@ -25,22 +25,20 @@ class Response implements \JsonSerializable, \ArrayAccess
      * @param string|null $result
      * @param array|null $info
      */
-    public function __construct(?string $result = null, array $info = [])
+    public function __construct($result = null, array $info = array())
     {
         $this->response($result, $info);
     }
 
     /**
      * @param string|null $result
-     * 
+     *
      * @return static
      */
-    protected function response(?string $result = null, array $info = [])
+    protected function response($result = null, array $info = array())
     {
-        [
-            'http_code'     => $httpStatus,
-            'header_size'   => $responseHeaderSize
-        ] = $info;
+        $httpStatus = $info['http_code'];
+        $responseHeaderSize = $info['header_size'];
 
         return $this->setHttpStatus($httpStatus)
             ->setHeaders($this->responseHeaders($result, $responseHeaderSize))
@@ -50,14 +48,14 @@ class Response implements \JsonSerializable, \ArrayAccess
     /**
      * @param string $result
      * @param integer $responseHeaderSize
-     * 
+     *
      * @return array
      */
-    protected function responseHeaders(string $result, int $responseHeaderSize)
+    protected function responseHeaders($result, $responseHeaderSize)
     {
         $responseHeaderStr = substr($result, 0, $responseHeaderSize);
 
-        $responseHeaders = [];
+        $responseHeaders = array();
 
         foreach (explode("\r\n", $responseHeaderStr) as $responseHeader) {
             $kv = explode(':', $responseHeader, 2);
@@ -73,10 +71,10 @@ class Response implements \JsonSerializable, \ArrayAccess
     /**
      * @param string $result
      * @param integer $responseHeaderSize
-     * 
+     *
      * @return string|false
      */
-    protected function bodyHandle(string $result, int $responseHeaderSize)
+    protected function bodyHandle($result, $responseHeaderSize)
     {
         return substr($result, $responseHeaderSize);
     }
@@ -91,12 +89,12 @@ class Response implements \JsonSerializable, \ArrayAccess
 
     /**
      * @param callable|\Exception|null $callable
-     * 
+     *
      * @throws RequestException|\UnexpectedValueException|\Exception
-     * 
+     *
      * @return static
      */
-    public function throw($throw = null)
+    public function throwException($throw = null)
     {
         if ($this->failed()) {
             if (is_callable($throw) || $throw instanceof \Closure) {
@@ -119,9 +117,9 @@ class Response implements \JsonSerializable, \ArrayAccess
 
     /**
      * @param mixed $callable
-     * 
+     *
      * @throws \UnexpectedValueException
-     * 
+     *
      * @return mixed
      */
     protected function returnExceptionCheck($callable = null)
@@ -136,10 +134,10 @@ class Response implements \JsonSerializable, \ArrayAccess
 
     /**
      * @param int $code
-     * 
+     *
      * @return static
      */
-    public function setHttpStatus(int $code = 200)
+    public function setHttpStatus($code = 200)
     {
         $this->httpStatus = $code;
 
@@ -168,10 +166,10 @@ class Response implements \JsonSerializable, \ArrayAccess
 
     /**
      * @param string $body
-     * 
+     *
      * @return static
      */
-    public function setBody(string $body = '')
+    public function setBody($body = '')
     {
         $this->body = $body;
 
@@ -210,20 +208,20 @@ class Response implements \JsonSerializable, \ArrayAccess
      * Returns the value of the specified response header.
      *
      * @param string $name A String specifying the header name.
-     * 
+     *
      * @return string|null A response header string, or null if the response does not have a header of that name.
      */
     public function header($key)
     {
-        return $this->headers[$key] ?? null;
+        return isset($this->headers[$key]) ? $this->headers[$key] : null;
     }
 
     /**
      * @param array $headers
-     * 
+     *
      * @return static
      */
-    public function setHeaders(array $headers = [])
+    public function setHeaders(array $headers = array())
     {
         $this->headers = $headers;
 
@@ -313,7 +311,8 @@ class Response implements \JsonSerializable, \ArrayAccess
      *
      * @return array
      */
-    public function jsonSerialize(): array
+    #[\ReturnTypeWillChange]
+    public function jsonSerialize()
     {
         return $this->json();
     }
@@ -325,9 +324,12 @@ class Response implements \JsonSerializable, \ArrayAccess
      *
      * @return mixed
      */
-    public function offsetGet($offset): mixed
+    #[\ReturnTypeWillChange]
+    public function offsetGet($offset)
     {
-        return $this->json()[$offset];
+        $json = $this->json();
+
+        return $json[$offset];
     }
 
     /**
@@ -335,12 +337,15 @@ class Response implements \JsonSerializable, \ArrayAccess
      *
      * @param  mixed  $offset
      * @param  mixed  $value
-     * 
+     *
      * @return void
      */
-    public function offsetSet($offset, $value): void
+    #[\ReturnTypeWillChange]
+    public function offsetSet($offset, $value)
     {
-        $this->json()[$offset] = $value;
+        $json = $this->json();
+
+        $json[$offset] = $value;
     }
 
     /**
@@ -350,7 +355,8 @@ class Response implements \JsonSerializable, \ArrayAccess
      *
      * @return bool
      */
-    public function offsetExists($offset): bool
+    #[\ReturnTypeWillChange]
+    public function offsetExists($offset)
     {
         return Arrays::has($this->json(), $offset);
     }
@@ -360,9 +366,12 @@ class Response implements \JsonSerializable, \ArrayAccess
      *
      * @param  mixed  $offset
      */
-    public function offsetUnset($offset): void
+    #[\ReturnTypeWillChange]
+    public function offsetUnset($offset)
     {
-        unset($this->json()[$offset]);
+        $json = $this->json();
+
+        unset($json[$offset]);
     }
 
     /**
@@ -388,28 +397,32 @@ class Response implements \JsonSerializable, \ArrayAccess
 
     /**
      * @param string $key
-     * 
+     *
      * @return mixed
      */
-    public function __get(string $key)
+    public function __get($key)
     {
         if (property_exists($this, $key)) {
             return $this->{$key};
         }
 
-        return $this->json()[$key];
+        $json = $this->json();
+
+        return $json[$key];
     }
 
     /**
      * @param string $key
      * @param mixed $value
      */
-    public function __set(string $key, $value)
+    public function __set($key, $value)
     {
         if (property_exists($this, $key)) {
             $this->{$key} = $value;
         } else {
-            $this->json()[$key] = $value;
+            $json = $this->json();
+
+            $json[$key] = $value;
         }
     }
 }

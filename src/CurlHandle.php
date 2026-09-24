@@ -91,7 +91,7 @@ class CurlHandle
      *
      * @return mixed
      */
-    public function getInfo(?int $option = null)
+    public function getInfo($option = null)
     {
         if (!$option) {
             return curl_getinfo($this->getCurlHandle());
@@ -102,12 +102,29 @@ class CurlHandle
 
     /**
      * create curl file
-     * 
-     * @return \CURLFile
+     *
+     * CURLFile (curl_file_create()) has existed continuously since PHP
+     * 5.5 all the way through 8.3+, so this covers every version except
+     * PHP 5.3/5.4, which have no object-based upload API at all — the
+     * only thing that ever worked there is the legacy "@path;type=..;
+     * filename=.." CURLOPT_POSTFIELDS string, which PHP 8.0 later removed
+     * entirely. Since the two paths don't overlap on any real PHP
+     * version (CURLFile is used everywhere it exists), this needs no
+     * further version branching.
+     *
+     * @param string $filePath
+     * @param string $mimeType
+     * @param string $fileName
+     *
+     * @return \CURLFile|string
      */
     public function createFile($filePath, $mimeType, $fileName)
     {
-        return curl_file_create($filePath, $mimeType, $fileName);
+        if (function_exists('curl_file_create')) {
+            return curl_file_create($filePath, $mimeType, $fileName);
+        }
+
+        return '@' . $filePath . ';type=' . $mimeType . ';filename=' . $fileName;
     }
 
     /**
@@ -136,6 +153,6 @@ class CurlHandle
 
     public function __call($method, $arguments)
     {
-        return $this->getClient()->$method(...$arguments);
+        return call_user_func_array(array($this->getClient(), $method), $arguments);
     }
 }

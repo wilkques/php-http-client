@@ -9,7 +9,9 @@ class ClientTest extends TestCase
 {
     public function testGetSendsMethodAndQueryString()
     {
-        $response = (new Client)->get($this->serverUrl(), array('a' => '1', 'b' => '2'));
+        $client = new Client;
+
+        $response = $client->get($this->serverUrl(), array('a' => '1', 'b' => '2'));
 
         $this->assertTrue($response->ok());
 
@@ -21,7 +23,9 @@ class ClientTest extends TestCase
 
     public function testPostAsFormSendsUrlEncodedBody()
     {
-        $response = (new Client)->asForm()->post($this->serverUrl(), array('x' => '1', 'y' => '2'));
+        $client = new Client;
+
+        $response = $client->asForm()->post($this->serverUrl(), array('x' => '1', 'y' => '2'));
 
         $this->assertTrue($response->ok());
 
@@ -33,7 +37,9 @@ class ClientTest extends TestCase
 
     public function testPutAsFormSendsBody()
     {
-        $response = (new Client)->asForm()->put($this->serverUrl(), array('x' => 'put-value'));
+        $client = new Client;
+
+        $response = $client->asForm()->put($this->serverUrl(), array('x' => 'put-value'));
 
         $json = $response->json();
 
@@ -49,7 +55,9 @@ class ClientTest extends TestCase
 
     public function testPatchAsFormSendsBody()
     {
-        $response = (new Client)->asForm()->patch($this->serverUrl(), array('x' => 'patch-value'));
+        $client = new Client;
+
+        $response = $client->asForm()->patch($this->serverUrl(), array('x' => 'patch-value'));
 
         $json = $response->json();
 
@@ -61,7 +69,9 @@ class ClientTest extends TestCase
 
     public function testDeleteSendsMethodAndQueryString()
     {
-        $response = (new Client)->delete($this->serverUrl(), array('id' => '42'));
+        $client = new Client;
+
+        $response = $client->delete($this->serverUrl(), array('id' => '42'));
 
         $json = $response->json();
 
@@ -71,12 +81,16 @@ class ClientTest extends TestCase
 
     public function testWithHeadersAndWithToken()
     {
-        $response = (new Client)
+        $client = new Client;
+
+        $response = $client
             ->withHeaders(array('X-Custom' => 'yes'))
             ->withToken('secret-token')
             ->get($this->serverUrl());
 
-        $headers = $response->json()['headers'];
+        $json = $response->json();
+
+        $headers = $json['headers'];
 
         $this->assertEquals('yes', $headers['X-CUSTOM']);
         $this->assertEquals('Bearer secret-token', $headers['AUTHORIZATION']);
@@ -102,7 +116,9 @@ class ClientTest extends TestCase
         $path = tempnam(sys_get_temp_dir(), 'wilkques-http-test-');
         file_put_contents($path, 'file-contents-here');
 
-        $response = (new Client)
+        $client = new Client;
+
+        $response = $client
             ->attach('upload', $path, 'text/plain', 'renamed.txt')
             ->post($this->serverUrl(), array('field' => 'value'));
 
@@ -119,16 +135,19 @@ class ClientTest extends TestCase
 
     public function testStatusCodeHelpers()
     {
-        $notFound = (new Client)->get($this->serverUrl('?status=404'));
+        $client = new Client;
+        $notFound = $client->get($this->serverUrl('?status=404'));
         $this->assertTrue($notFound->clientError());
         $this->assertTrue($notFound->failed());
         $this->assertFalse($notFound->successful());
 
-        $serverError = (new Client)->get($this->serverUrl('?status=500'));
+        $client = new Client;
+        $serverError = $client->get($this->serverUrl('?status=500'));
         $this->assertTrue($serverError->serverError());
         $this->assertTrue($serverError->failed());
 
-        $redirect = (new Client)->get($this->serverUrl('?status=301'));
+        $client = new Client;
+        $redirect = $client->get($this->serverUrl('?status=301'));
         $this->assertTrue($redirect->redirect());
     }
 
@@ -136,7 +155,9 @@ class ClientTest extends TestCase
     {
         $this->expectExceptionCompat('Wilkques\\Http\\Exceptions\\CurlExecutionException');
 
-        (new Client)->get('http://this-host-does-not-resolve.invalid/');
+        $client = new Client;
+
+        $client->get('http://this-host-does-not-resolve.invalid/');
     }
 
     public function testStaticCallProxiesUndefinedMethodsToNewInstance()

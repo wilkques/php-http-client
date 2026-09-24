@@ -31,7 +31,7 @@ class Http
      * @param Client|null $client
      * @param Pool|null $pool
      */
-    public function __construct(?Client $client = null, ?Pool $pool = null)
+    public function __construct(Client $client = null, Pool $pool = null)
     {
         $this->setClient($client)->setPool($pool);
     }
@@ -39,10 +39,10 @@ class Http
     /**
      * @param Client|null $client
      * @param Pool|null $pool
-     * 
+     *
      * @return static
      */
-    public static function make(?Client $client = null, ?Pool $pool = null)
+    public static function make(Client $client = null, Pool $pool = null)
     {
         return new static($client, $pool);
     }
@@ -50,7 +50,7 @@ class Http
     /**
      * @return static
      */
-    public function setClient(?Client $client = null)
+    public function setClient(Client $client = null)
     {
         $this->client = $client;
 
@@ -80,7 +80,7 @@ class Http
     /**
      * @return static
      */
-    public function setPool(?Pool $pool = null)
+    public function setPool(Pool $pool = null)
     {
         $this->pool = $pool;
 
@@ -110,26 +110,26 @@ class Http
     /**
      * @param string $method
      * @param array $arguments
-     * 
+     *
      * @return mixed
      */
-    public function __call(string $method, array $arguments)
+    public function __call($method, array $arguments)
     {
         if (method_exists($this->newClient(), $method)) {
-            return $this->newClient()->$method(...$arguments);
+            return call_user_func_array(array($this->newClient(), $method), $arguments);
         }
 
-        return $this->newPool()->$method(...$arguments);
+        return call_user_func_array(array($this->newPool(), $method), $arguments);
     }
 
     /**
      * @param string $method
      * @param array $arguments
-     * 
+     *
      * @return mixed
      */
     public static function __callStatic($method, $arguments)
     {
-        return (new static)->$method(...$arguments);
+        return call_user_func_array(array(new static, $method), $arguments);
     }
 }

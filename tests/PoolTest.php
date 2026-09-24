@@ -15,15 +15,18 @@ class PoolTest extends TestCase
         $serverUrl = $this->serverUrl();
 
         $responses = $pool->pool(function ($pool) use ($serverUrl) {
-            $pool->as('one')->get($serverUrl, array('n' => '1'));
-            $pool->as('two')->get($serverUrl, array('n' => '2'));
+            $pool->alias('one')->get($serverUrl, array('n' => '1'));
+            $pool->alias('two')->get($serverUrl, array('n' => '2'));
         });
 
         $this->assertInstanceOf('Wilkques\\Http\\Response', $responses['one']);
         $this->assertInstanceOf('Wilkques\\Http\\Response', $responses['two']);
 
-        $this->assertEquals(array('n' => '1'), $responses['one']->json()['query']);
-        $this->assertEquals(array('n' => '2'), $responses['two']->json()['query']);
+        $oneJson = $responses['one']->json();
+        $twoJson = $responses['two']->json();
+
+        $this->assertEquals(array('n' => '1'), $oneJson['query']);
+        $this->assertEquals(array('n' => '2'), $twoJson['query']);
     }
 
     public function testPoolRejectedCallbackReceivesCurlExecutionException()
@@ -35,8 +38,8 @@ class PoolTest extends TestCase
         $rejectedException = null;
 
         $responses = $pool->pool(function ($pool) use ($serverUrl) {
-            $pool->as('good')->get($serverUrl);
-            $pool->as('bad')->get('http://this-host-does-not-resolve.invalid/');
+            $pool->alias('good')->get($serverUrl);
+            $pool->alias('bad')->get('http://this-host-does-not-resolve.invalid/');
         }, array(
             'rejected' => function (CurlExecutionException $e, $key) use (&$rejectedException) {
                 $rejectedException = $e;

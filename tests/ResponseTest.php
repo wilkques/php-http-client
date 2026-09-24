@@ -55,7 +55,8 @@ class ResponseTest extends TestCase
         $this->assertFalse($response->failed());
 
         list($raw, $info) = $this->buildRaw(301, array(), '');
-        $this->assertTrue((new Response($raw, $info))->redirect());
+        $response = new Response($raw, $info);
+        $this->assertTrue($response->redirect());
 
         list($raw, $info) = $this->buildRaw(404, array(), '');
         $response = new Response($raw, $info);
@@ -114,7 +115,7 @@ class ResponseTest extends TestCase
 
         $response = new Response($raw, $info);
 
-        $this->assertSame($response, $response->throw());
+        $this->assertSame($response, $response->throwException());
     }
 
     public function testThrowThrowsRequestExceptionWhenFailed()
@@ -125,7 +126,7 @@ class ResponseTest extends TestCase
 
         $this->expectExceptionCompat('Wilkques\\Http\\Exceptions\\RequestException');
 
-        $response->throw();
+        $response->throwException();
     }
 
     public function testThrowWithCustomExceptionInstance()
@@ -139,7 +140,7 @@ class ResponseTest extends TestCase
         $this->expectExceptionCompat('Wilkques\\Http\\Exceptions\\CurlExecutionException');
 
         try {
-            $response->throw($custom);
+            $response->throwException($custom);
         } catch (CurlExecutionException $e) {
             $this->assertSame($custom, $e);
 
